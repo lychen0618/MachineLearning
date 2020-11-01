@@ -50,10 +50,12 @@ def gradient_descent(x_train, y_train, alpha, type):
 def Indicate(z):
     return np.array([1 if Decimal(str(i)) >= Decimal('0.0') else 0 for i in z])
 
+
 def Cost0(theta, x, y):
     part1 = np.log(Indicate(x.dot(theta))).dot(-y)
-    part2 = np.log(1- Indicate(x.dot(theta))).dot(1 - y)
+    part2 = np.log(1 - Indicate(x.dot(theta))).dot(1 - y)
     return part1 - part2
+
 
 def Gradient0(theta, x, y):
     return x.transpose().dot(Indicate(x.dot(theta)) - y)
@@ -70,6 +72,7 @@ def perceptron(x1, x2):
     x = np.c_[addcol, x]
     res = opt.minimize(fun=Cost0, x0=theta, method='TNC', args=(x, y), jac=Gradient0)
     return res.x
+
 
 # def perceptron(x1, x2):
 #     x = np.vstack((x1, x2))
@@ -158,6 +161,69 @@ def myNewLDA(x, y, k):
     # s[::-1]是从最后一个元素到第一个元素复制一遍（反向）
 
     return topk_eig_vecs
+
+
+def gaussian_kernel_func(x, z):
+    # sigma = 2
+    # return math.exp(-(x - z).dot((x - z).T) / (2 * sigma * sigma))
+    return x.dot(z) ** 2
+
+
+def LDAWithKernel(x, y, k):
+    # x为数据集，y为label，k为目标维数
+    label_ = list(set(y))
+    x_classify = {}
+    for label in label_:
+        xi = np.array([x[i] for i in range(len(x)) if y[i] == label])
+        x_classify[label] = xi
+
+    M = np.array([[gaussian_kernel_func(x[i], x[j]) for j in range(x.shape[0])] for i in range(x.shape[0])])
+
+    m = np.mean(M, axis=1)
+    m_classify = {}
+
+    for label in label_:
+        mi = np.mean([M[i] for i in range(x.shape[0]) if y[i] == label], axis=0)
+        m_classify[label] = mi
+
+    # 计算类内散度矩阵
+    Sw = M.dot(M.T)
+    for label in label_:
+        Sw -= len(x_classify[label]) * m_classify[label].T.dot(m_classify[label])
+
+    # 计算类间散度矩阵
+    Sb = np.zeros((len(m), len(m)))
+    for label in label_:
+        Sb += len(x_classify[label]) * np.dot((m_classify[label] - m).reshape(
+            (len(m), 1)), (m_classify[label] - m).reshape((1, len(m))))
+
+    # 计算Sw-1*Sb的特征值和特征矩阵
+    # U, S, V = np.linalg.svd(Sw)
+    # S = np.diag(S)
+    # SW_inverse = V.dot(np.linalg.pinv(S)).dot(U.T)
+    # A = SW_inverse.dot(Sb)
+    # eig_vals, eig_vecs = np.linalg.eig(A)
+    eig_vals, eig_vecs = np.linalg.eig(np.linalg.pinv(Sw).dot(Sb))
+    eig_vals = np.real(eig_vals)
+    eig_vecs = np.real(eig_vecs)
+
+    # 按从小到大排序，输出排序指示值
+    sorted_indices = np.argsort(eig_vals)
+    # 反转
+    sorted_indices = sorted_indices[::-1]
+    # 提取前k个特征向量
+    topk_eig_vecs = eig_vecs[:, sorted_indices[0:k:1]]
+    # s[i:j:k]，i起始位置,j终止位置，k表示步长，默认为1
+    # s[::-1]是从最后一个元素到第一个元素复制一遍（反向）
+
+    temp = {}
+    for label in label_:
+        temp[label] = np.dot([M[i] for i in range(x.shape[0]) if y[i] == label], topk_eig_vecs)
+        temp[label] = np.real(np.mean(temp[label], axis=0))
+        for j in range(len(temp[label])):
+            temp[label][j] = 1 if temp[label][j] > 0 else 0
+
+    return topk_eig_vecs, temp
 
 
 def myLDA(x, y, k):

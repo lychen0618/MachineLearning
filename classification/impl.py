@@ -1,11 +1,18 @@
+import math
 from decimal import Decimal
 
 import numpy as np
+from classification.method_with_kernel import *
 import regression.regression_method as myre
 import classification.classification_method as mycf
 import matplotlib.pyplot as plt
 from sklearn.linear_model import Lasso
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn import svm
+
+
+def gaussian_kernel_func(x, z):
+    return x.dot(z) ** 2
 
 
 # 从文件读取数据
@@ -77,92 +84,92 @@ def handwritingClassfy(percent):
     print(trainLabels0.shape)
     print(testLabels0.shape)
 
-    accuracy={}
-    for dim in range(2,30):
-        w_vector = mycf.myNewLDA(trainMat1, trainLabels0, dim)
-        x_train = np.dot(trainMat1, w_vector)
-        x_test = np.dot(testMat1, w_vector)
-        label_ = list(set(trainLabels0))
-        x_classify = {}
-
-        for label in label_:
-            xi = np.array([x_train[i] for i in range(len(x_train)) if trainLabels0[i] == label])
-            x_classify[label] = xi
-        # perceptron
-        # thetaSet = {}
-        # n = 0
-        # for i in range(9):
-        #     for j in range(i + 1, 10):
-        #         thetaSet[(i, j)] = mycf.perceptron(x_classify[i], x_classify[j])
-        # #         t = thetaSet[(i, j)]
-        # #         print(t)
-        # #         n += 1
-        # #         plt.figure(n)
-        # #         plt.scatter(x_classify[i][:, 0], x_classify[i][:, 1], marker='o')
-        # #         plt.scatter(x_classify[j][:, 0], x_classify[j][:, 1], marker='*')
-        # #         plt.plot([-0.1, 0.1], [-(t[0] - 0.1 * t[1]) / t[2], -(t[0] + 0.1 * t[1]) / t[2]])
-        # # plt.show()
-        # # print(len(thetaSet))
-        # perceptron_predict = np.zeros((testLabels0.shape[0]))
-        # for i in range(x_test.shape[0]):
-        #     vote = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        #     for key, value in thetaSet.items():
-        #         # print(key)
-        #         # print(len(value))
-        #         re = np.dot(x_test[i], value[1:]) + value[0]
-        #         # print(re)
-        #         if Decimal(str(re)) >= Decimal('0.0'):
-        #             vote[key[0]] += 1
-        #         else:
-        #             vote[key[1]] += 1
-        #     m = 0
-        #     for j in range(10):
-        #         if (vote[j] > vote[m]):
-        #             m = j
-        #     perceptron_predict[i] = m
-        # print(dim)
-        # print(accuracyCount(perceptron_predict, testLabels0))
-
-        # logistic regression
-        thetaSet = {}
-        n=0
-        for i in range(9):
-            for j in range(i + 1, 10):
-                thetaSet[(i, j)] = mycf.logistic_regression(x_classify[i], x_classify[j])
-        #         t = thetaSet[(i, j)]
-        #         n+=1
-        #         plt.figure(n)
-        #         plt.scatter(x_classify[i][:, 0], x_classify[i][:, 1], marker='o')
-        #         plt.scatter(x_classify[j][:, 0], x_classify[j][:, 1], marker='*')
-        #         plt.plot([-0.02, 0.03], [-(t[0] - 0.02 * t[1]) / t[2], -(t[0] + 0.03 * t[1]) / t[2]])
-        # plt.show()
-        logistic_predict = np.zeros((testLabels0.shape[0]))
-        for i in range(x_test.shape[0]):
-            vote = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            for key, value in thetaSet.items():
-                # print(x_test[i].dot(value[1:]) + value[0])
-                if Sigmoid(x_test[i].dot(value[1:]) + value[0]) >= 0.5:
-                    vote[key[0]] += 1
-                else:
-                    vote[key[1]] += 1
-            m = 0
-            # print(vote)
-            for j in range(10):
-                if vote[j] > vote[m]:
-                    m = j
-            logistic_predict[i] = m
-
-        # print(logistic_predict)
-        # print(testLabels0)
-        print(dim)
-        print(accuracyCount(logistic_predict, testLabels0))
-        accuracy[dim]=accuracyCount(logistic_predict, testLabels0)*100.0
-
-    plt.figure(1)
-    plt.xlabel("dim")
-    plt.ylabel("accuracy/%")
-    plt.plot(accuracy.keys(),accuracy.values(),'ro-',color='#4169E1', alpha=0.8)
-    plt.show()
+    # accuracy={}
+    # for dim in range(2,30):
+    #     w_vector = mycf.myNewLDA(trainMat1, trainLabels0, dim)
+    #     x_train = np.dot(trainMat1, w_vector)
+    #     x_test = np.dot(testMat1, w_vector)
+    #     label_ = list(set(trainLabels0))
+    #     x_classify = {}
+    #
+    #     for label in label_:
+    #         xi = np.array([x_train[i] for i in range(len(x_train)) if trainLabels0[i] == label])
+    #         x_classify[label] = xi
+    #     # perceptron
+    #     # thetaSet = {}
+    #     # n = 0
+    #     # for i in range(9):
+    #     #     for j in range(i + 1, 10):
+    #     #         thetaSet[(i, j)] = mycf.perceptron(x_classify[i], x_classify[j])
+    #     # #         t = thetaSet[(i, j)]
+    #     # #         print(t)
+    #     # #         n += 1
+    #     # #         plt.figure(n)
+    #     # #         plt.scatter(x_classify[i][:, 0], x_classify[i][:, 1], marker='o')
+    #     # #         plt.scatter(x_classify[j][:, 0], x_classify[j][:, 1], marker='*')
+    #     # #         plt.plot([-0.1, 0.1], [-(t[0] - 0.1 * t[1]) / t[2], -(t[0] + 0.1 * t[1]) / t[2]])
+    #     # # plt.show()
+    #     # # print(len(thetaSet))
+    #     # perceptron_predict = np.zeros((testLabels0.shape[0]))
+    #     # for i in range(x_test.shape[0]):
+    #     #     vote = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    #     #     for key, value in thetaSet.items():
+    #     #         # print(key)
+    #     #         # print(len(value))
+    #     #         re = np.dot(x_test[i], value[1:]) + value[0]
+    #     #         # print(re)
+    #     #         if Decimal(str(re)) >= Decimal('0.0'):
+    #     #             vote[key[0]] += 1
+    #     #         else:
+    #     #             vote[key[1]] += 1
+    #     #     m = 0
+    #     #     for j in range(10):
+    #     #         if (vote[j] > vote[m]):
+    #     #             m = j
+    #     #     perceptron_predict[i] = m
+    #     # print(dim)
+    #     # print(accuracyCount(perceptron_predict, testLabels0))
+    #
+    #     # logistic regression
+    #     thetaSet = {}
+    #     n=0
+    #     for i in range(9):
+    #         for j in range(i + 1, 10):
+    #             thetaSet[(i, j)] = mycf.logistic_regression(x_classify[i], x_classify[j])
+    #     #         t = thetaSet[(i, j)]
+    #     #         n+=1
+    #     #         plt.figure(n)
+    #     #         plt.scatter(x_classify[i][:, 0], x_classify[i][:, 1], marker='o')
+    #     #         plt.scatter(x_classify[j][:, 0], x_classify[j][:, 1], marker='*')
+    #     #         plt.plot([-0.02, 0.03], [-(t[0] - 0.02 * t[1]) / t[2], -(t[0] + 0.03 * t[1]) / t[2]])
+    #     # plt.show()
+    #     logistic_predict = np.zeros((testLabels0.shape[0]))
+    #     for i in range(x_test.shape[0]):
+    #         vote = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    #         for key, value in thetaSet.items():
+    #             # print(x_test[i].dot(value[1:]) + value[0])
+    #             if Sigmoid(x_test[i].dot(value[1:]) + value[0]) >= 0.5:
+    #                 vote[key[0]] += 1
+    #             else:
+    #                 vote[key[1]] += 1
+    #         m = 0
+    #         # print(vote)
+    #         for j in range(10):
+    #             if vote[j] > vote[m]:
+    #                 m = j
+    #         logistic_predict[i] = m
+    #
+    #     # print(logistic_predict)
+    #     # print(testLabels0)
+    #     print(dim)
+    #     print(accuracyCount(logistic_predict, testLabels0))
+    #     accuracy[dim]=accuracyCount(logistic_predict, testLabels0)*100.0
+    #
+    # plt.figure(1)
+    # plt.xlabel("dim")
+    # plt.ylabel("accuracy/%")
+    # plt.plot(accuracy.keys(),accuracy.values(),'ro-',color='#4169E1', alpha=0.8)
+    # plt.show()
 
     # # least squares with regularization
     # # L1
@@ -212,5 +219,35 @@ def handwritingClassfy(percent):
     # plt.plot([-0.1, 0.1], [-(t[0] - 0.1 * t[1]) / t[2], -(t[0] + 0.1 * t[1]) / t[2]])
     # plt.show()
 
+    # LDA with kernel
+    for dim in range(8,9):
 
-handwritingClassfy(0.1)
+        my_lda_with_kernel=LDAWithKernel()
+        my_lda_with_kernel.fit(trainMat1,trainLabels0,dim)
+        mylda_y_predict=my_lda_with_kernel.predict(testMat1)
+
+        print("dim: %d",dim)
+        print(accuracyCount(mylda_y_predict, testLabels0))
+
+    # svm
+    # linear
+    # my_linear_svm_with_linear_kernel=svm.SVC(kernel='linear')
+    # my_linear_svm_with_linear_kernel.fit(trainMat1,trainLabels0)
+    #
+    # linear_svm_predict_with_linear_kernel=my_linear_svm_with_linear_kernel.predict(testMat1)
+    # print(accuracyCount(linear_svm_predict_with_linear_kernel,testLabels0))
+    #
+    # my_linear_svm_with_polynomial_kernel = svm.SVC(kernel='poly')
+    # my_linear_svm_with_polynomial_kernel.fit(trainMat1, trainLabels0)
+    #
+    # linear_svm_predict_with_polynomial_kernel = my_linear_svm_with_polynomial_kernel.predict(testMat1)
+    # print(accuracyCount(linear_svm_predict_with_polynomial_kernel, testLabels0))
+    #
+    # # nonlinear
+    # my_nonlinear_svm = svm.NuSVC()
+    # my_nonlinear_svm.fit(trainMat1, trainLabels0)
+    #
+    # nonlinear_svm_predict = my_nonlinear_svm.predict(testMat1)
+    # print(accuracyCount(nonlinear_svm_predict, testLabels0))
+
+handwritingClassfy(0.02)
