@@ -10,6 +10,9 @@ from sklearn.linear_model import Lasso
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn import svm
 
+from mpl_toolkits.mplot3d import Axes3D
+from sklearn import neural_network as nn
+
 
 def gaussian_kernel_func(x, z):
     return x.dot(z) ** 2
@@ -24,7 +27,7 @@ def extractData(fileName, size, type):
         for i in range(size):
             for j in range(28 * 28):
                 pixel = file.read(1)
-                dataMat[i][j] = ord(pixel) * 1.0 / 255
+                dataMat[i][j] = ord(pixel)
     else:
         file.seek(8)
         dataMat = np.zeros(size)
@@ -219,15 +222,15 @@ def handwritingClassfy(percent):
     # plt.plot([-0.1, 0.1], [-(t[0] - 0.1 * t[1]) / t[2], -(t[0] + 0.1 * t[1]) / t[2]])
     # plt.show()
 
-    # LDA with kernel
-    for dim in range(8,9):
-
-        my_lda_with_kernel=LDAWithKernel()
-        my_lda_with_kernel.fit(trainMat1,trainLabels0,dim)
-        mylda_y_predict=my_lda_with_kernel.predict(testMat1)
-
-        print("dim: %d",dim)
-        print(accuracyCount(mylda_y_predict, testLabels0))
+    # # LDA with kernel
+    # for dim in range(8,9):
+    #
+    #     my_lda_with_kernel=LDAWithKernel()
+    #     my_lda_with_kernel.fit(trainMat1,trainLabels0,dim)
+    #     mylda_y_predict=my_lda_with_kernel.predict(testMat1)
+    #
+    #     print("dim: %d",dim)
+    #     print(accuracyCount(mylda_y_predict, testLabels0))
 
     # svm
     # linear
@@ -250,4 +253,45 @@ def handwritingClassfy(percent):
     # nonlinear_svm_predict = my_nonlinear_svm.predict(testMat1)
     # print(accuracyCount(nonlinear_svm_predict, testLabels0))
 
-handwritingClassfy(0.02)
+    from sklearn.preprocessing import StandardScaler
+    sclar = StandardScaler()
+    sclar.fit(trainMat1)
+    trainMat1 = sclar.transform(trainMat1)
+    testMat1 = sclar.transform(testMat1)
+
+    # bp_MLPNN
+    # without regularization
+    # bp_MLPNN = nn.MLPClassifier(solver='sgd', hidden_layer_sizes=(100,100), random_state=1, max_iter=10000)
+    # bp_MLPNN.fit(trainMat1, trainLabels0)
+    # bp_MLPNN_predict = bp_MLPNN.predict(testMat1)
+    # print(accuracyCount(bp_MLPNN_predict,testLabels0))
+    #
+    # bp_MLPNN_with_regularization = nn.MLPClassifier(solver='sgd', alpha=1e-4, hidden_layer_sizes=(100,100),
+    #                                                 random_state=1, max_iter=10000)
+    # bp_MLPNN_with_regularization.fit(trainMat1, trainLabels0)
+    # bp_MLPNN_with_re_predict = bp_MLPNN_with_regularization.predict(testMat1)
+    # print(accuracyCount(bp_MLPNN_with_re_predict,testLabels0))
+
+    # with regularization
+    al_store = []
+    results = []
+    al = 2 ** -15
+    while al <= 10:
+        al_store.append(al)
+        bp_MLPNN_with_regularization = nn.MLPClassifier(solver='sgd', alpha=al, hidden_layer_sizes=(100, 100),
+                                                        random_state=1, max_iter=10000)
+        bp_MLPNN_with_regularization.fit(trainMat1, trainLabels0)
+        bp_MLPNN_with_re_predict = bp_MLPNN_with_regularization.predict(testMat1)
+        print("alpha=", al)
+        results.append(accuracyCount(bp_MLPNN_with_re_predict, testLabels0))
+        al *= 2
+
+    plt.figure(1)
+    plt.scatter(np.log2(np.array(al_store)), results, marker='o')
+    plt.title("different alpha")
+    plt.xlabel("log alpha")
+    plt.ylabel("ac")
+    plt.show()
+
+
+handwritingClassfy(0.01)

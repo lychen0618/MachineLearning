@@ -1,4 +1,5 @@
 print("Hello World!")
+print(2e-2)
 
 # 格式化
 print("he.（upper)".upper())  # 还有其他很多函数：strip()
